@@ -2,6 +2,11 @@ module.exports = require('./eslintrc.json')
 const fs = require('fs');
 const path = require('path');
 const yargs = require('yargs');
+const util = require('util');
+
+const mkDir = util.promisify(fs.mkdir);
+const exist = util.promisify(fs.exists)
+const copy = util.promisify(fs.copyFile);
 const args = yargs
   .usage('Usage $0 [options]')
   .help('help')
@@ -31,19 +36,16 @@ const copyFiles = () => {
   console.log(filesList);
   filesList.forEach(file => {
     const firstFileLetter = file.key.charAt(0);
-    fs.exists(firstFileLetter, (err, folder) => {
-      if (!folder) {
-        fs.mkdir(path.join(destinationDir,firstFileLetter), (err, data) => {
-          // теперь надо перенести файлы в нашу директорию
-          fs.copyFile(file.value, destinationDir + '\\'+ firstFileLetter + '\\' + file.key, (err) => {
-            if (err) {
-              console.log(err);
-              process.exit(err);
-            }
-          });
-        });
+    exist(path.join(destinationDir, firstFileLetter)).then(folder => {
+      if (!folder) {        
+        mkDir(path.join(destinationDir, firstFileLetter)).then(data => {
+          copy(file.value, destinationDir + '\\' + firstFileLetter + '\\' + file.key);
+        })
       }
-    });
+    }).catch(err=>{
+      console.log(err);
+      process.exit(err);  
+    })
   })
 }
 
@@ -71,10 +73,13 @@ const sourceDir = args.e;
 const destinationDir = args.o;
 let filesList = [];
 parseDir(sourceDir);
-fs.mkdir(destinationDir, (err, data) => {
+
+mkDir(destinationDir).then(data => {
+  console.log('FirstCreateDestDir');
+  copyFiles();
+}).catch(err => {
   if (err) {
     console.log(err);
     process.exit(err);
   }
-  copyFiles();
-})
+});
