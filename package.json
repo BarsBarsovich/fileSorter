@@ -61,5 +61,9 @@
   "scripts": {
     "lint": "eslint . --config=eslintrc.json",
     "test": "npm run lint && tape test/*.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "yargs": "^13.2.4"
   }
 }
